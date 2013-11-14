@@ -1,7 +1,7 @@
 define iis::manage_site($site_path, $app_pool, $host_header = '', $site_name = $title, $port = '80', $ip_address = '*', $ssl = 'false') {
   include 'iis::param::powershell'
 
-  validate_re($ssl, '^(false|true)$', 'sll must be one of \'true\' or \'false\'')
+  validate_re($ssl, '^(false|true)$', 'ssl must be one of \'true\' or \'false\'')
 
   iis::createpath { "${site_name}-${site_path}":
     site_path => $site_path
