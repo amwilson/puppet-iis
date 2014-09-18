@@ -1,7 +1,6 @@
 #
-define iis::manage_virtual_application($site_name, $site_path, $app_pool, $virtual_application_name = $title, $ensure = 'present') {
-  include 'iis::param::powershell'
-
+define iis::manage_virtual_application($site_name, $site_path, $app_pool, $virtual_application_name = $title, $ensure = 'present', $manage_path = true) {
+  validate_bool($manage_path)
   validate_re($ensure, '^(present|installed|absent|purged)$', 'ensure must be one of \'present\', \'installed\', \'absent\', \'purged\'')
 
   if ($ensure in ['present','installed']) {
@@ -15,6 +14,16 @@ define iis::manage_virtual_application($site_name, $site_path, $app_pool, $virtu
       require   => [ Iis::Createpath["${site_name}-${virtual_application_name}-${site_path}"], Iis::Manage_site[$site_name] ],
       provider  => powershell,
       logoutput => true,
+    }
+
+    if $manage_path == true {
+      exec { "UpdateVirtApp-Path-${site_name}-${virtual_application_name}":
+        command   => "Import-Module WebAdministration; Set-ItemProperty \"IIS:\\Sites\\${site_name}\\${virtual_application_name}\" -Name physicalPath -Value \"${site_path}\"",
+        onlyif    => "Import-Module WebAdministration; if((Test-Path \"IIS:\\Sites\\${site_name}\") -eq \$false) { exit 1 } if ((Get-ItemProperty \"IIS:\\Sites\\${site_name}\\${virtual_application_name}\" physicalPath) -eq \"${site_path}\") { exit 1 } else { exit 0 }",
+        provider  => powershell,
+        logoutput => true,
+        before    => Exec["CreateSite-${site_name}"],
+      }
     }
   } else {
     exec { "DeleteVirtualApplication-${site_name}-${virtual_application_name}" :
